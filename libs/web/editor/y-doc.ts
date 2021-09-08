@@ -93,3 +93,9 @@ export const getYDocUpdate = ({ panelId = 0 }: { panelId?: number }) => {
 const getDecodedUpdates = (encodedUpdates: string[]) => {
   return encodedUpdates.map(toUint8Array)
 }
+
+export const getDocStateVector = (updates: string[]) => {
+  return fromUint8Array(
+    Y.encodeStateVectorFromUpdate(Y.mergeUpdates(getDecodedUpdates(updates)))
+  )
+}

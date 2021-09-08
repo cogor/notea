@@ -2,8 +2,8 @@ import { TreeModel } from 'libs/shared/tree'
 import { noteCacheInstance, NoteCacheItem } from 'libs/web/cache'
 import { isNoteLink, NoteModel } from 'libs/shared/note'
 import { keys, pull } from 'lodash'
-import { removeMarkdown } from '../utils/markdown'
 import markdownLinkExtractor from 'markdown-link-extractor'
+import { mergeUpdates } from 'libs/shared/y-doc'
 
 /**
  * 清除本地存储中未使用的 note
@@ -32,9 +32,18 @@ async function setItem(id: string, note: NoteModel) {
       }
     })
   }
+  // todo 从本地读 update 进行 merge，然后更新 link
+  const local = await getItem(id)
+  if (local) {
+    note.updates = [
+      mergeUpdates([...(local.updates ?? []), ...(note.updates ?? [])]),
+    ]
+  }
+  console.log('set', local?.updates, note.updates)
   return noteCacheInstance.setItem<NoteCacheItem>(id, {
     ...note,
-    rawContent: removeMarkdown(note.content),
+    // todo 从 updates 里转换
+    // rawContent: removeMarkdown(note.content),
     linkIds,
   })
 }
@@ -46,9 +55,16 @@ async function mutateItem(id: string, body: Partial<NoteModel>) {
     throw new Error('not found note cache:' + id)
   }
 
+  const updates = note.updates ?? []
+
+  if (body.updates) {
+    updates.push(...body.updates)
+  }
+
   await setItem(id, {
     ...note,
     ...body,
+    updates,
   })
 }
 
